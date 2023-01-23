@@ -15,21 +15,6 @@ from numpy import e, pi
 import math 
 import time
 
-
-# converting everything from np to cp is where the rror is localized
-# when converting back to np, all data was converted into 1
-
-# @numba.cuda.jit
-# def assignValues (zarray2, value):
-#     i, j, k = cuda.grid (3)
-#     if i < zarray2.shape [0] and j < zarray2.shape [1] and k < zarray2.shape [2]:
-#         zarray2[i, j, k] += value
-# numba.cuda.synchronize (COULD BE HELPFUL FOR ^^^)
-
-#a = 250
-# b = 2000
-# c= 1997
-# d = 500
 @numba.cuda.jit
 def computation (x_gpu, y_gpu, rnge, increment, distarray, N, zburst_gpu, y_data, alpha, E_gpu, sigma_gpu, zarray2, pi,index):
     i = cuda.threadIdx.x
@@ -45,31 +30,9 @@ def computation (x_gpu, y_gpu, rnge, increment, distarray, N, zburst_gpu, y_data
         temparr [i, j] = 1/temparr[i,j]
         value = y_data[k] * alpha * E_gpu[index] * 1/(4*pi) * 1/(math.sqrt(2*pi)*sigma_gpu[index]) * 0.9 #last number is absorption
         zarray2[i,j,k] += value
-        # print (i, j, k, value)
 
-
-# GPU_MEMORY = 4000000000 # in bytes
-# mempool = cp.get_default_memory_pool()
-# mempool.set_limit(size=3.5*1024**3)
-# a=["a","b","c","d","e","f","g","h","i",'j','k','l','m']
 a=["100m_in_2000_1d","250","200","200","THIS WAS THE ERROR","100m_in_2000_1d","0","0","100","2000","100m","in","2000-Fragments(1Day)"]
-# for input in sys.stdin: # take inputs from a shell script
-#     input1 = input.strip()
-#     print(input1)
-#     b,c,d,e,f,g,h,i,j,k,l,m,n = input1.split()
-#     a[0] = b
-#     a[1] = c
-#     a[2] = d
-#     a[3] = e
-#     a[4] = f
-#     a[5] = g
-#     a[6] = h
-#     a[7] = i
-#     a[8] = j
-#     a[9] = k
-#     a[10] = l
-#     a[11] = m
-#     a[12] = n
+
 name = a[0]  #filename of the input bin files
 N = int(a[1]) #This is the dimensions of any particular frame (always the same as XDIM from cpp)
 frn = int(a[2]) #This is the total number of frames in the simulation (has to be the same as frn from cpp) 
@@ -95,18 +58,11 @@ xls = pd.ExcelFile(name+".xlsx", engine = "openpyxl")
 df = pd.read_excel(xls, 'Ring Fragment Bombardment -sort')
 x = df['OUTPUT - Asteroid Position x(km)'].to_numpy()
 y = df['OUTPUT - Asteroid Position y(km)'].to_numpy()
-# print (type (x))
-# y = cp.array (np.delete(y,[0,1,2]), dtype= np.float64)
 sigma = df['Sigma for Gaussian (in time) optical pulse power (s)'].to_numpy()
-# sigma = cp.array (np.delete(sigma,[0,1,2]), dtype = np.float64)
 E = df['OUTPUT.28'].to_numpy()
-# E = cp.array (np.delete(E,[0,1,2]), dtype = np.float64)
 zburst = df['OUTPUT.22'].to_numpy()
 times = df['OUTPU'].to_numpy()
-# zburst = cp.array (np.delete(zburst,[0,1,2]), dtype = np.float64)
-# times = cp.array(np.delete(times,[0,1,2]), dtype = np.float64)
 hundredpower=df['P_opt_atm (w/m^2) - no projection - horizon cut - with atm transmission - assuming 100% conversion of blast to optical'].to_numpy()
-# hundredpower = cp.array(np.delete(hundredpower,[0,1,2]), dtype = np.float64)
 x = np.delete (x, [0, 1, 2])
 y = np.delete (y, [0, 1, 2])
 sigma = np.delete (sigma, [0, 1, 2])
@@ -146,10 +102,8 @@ params = np.delete(params, [0,1,2,4,5])
 params = cp.array (params[:2], dtype = np.float32)
 a = params[0]
 b = params[1]
-# begin_time = datetime.datetime.now()
 begin_time = time.time()
-#plt.plot(y_data[0])
-#plt.show()
+
 for i in range(NOI):
     y_data[i] = y_data[i]*10000
 print('starting calculations for' + name)
@@ -160,11 +114,8 @@ if (exists(name + '1.bin')==False):
     y_gpu = cuda.to_device(y_gpu) #delete the non-numeric data from each "array"
     sigma_gpu = np.array (np.delete(sigma,[0,1,2]), dtype = np.float32)
     sigma_gpu = cuda.to_device(sigma_gpu) #delete the non-numeric data from each "array"
-    E_gpu = np.array (np.delete(E,[0,1,2]), dtype = np.float32)
-    print ("EGPU VALS")
-    for val in E_gpu:
-        print (val)
-    E_gpu = cuda.to_device(E_gpu) #delete the non-numeric data from each "array"
+    E_gpu = np.array (np.delete(E,[0,1,2]), dtype = np.float32) #delete the non-numeric data from each "array"
+    E_gpu = cuda.to_device(E_gpu) 
     zburst_gpu = np.array (np.delete(zburst,[0,1,2]), dtype = np.float32)
     zburst_gpu = cuda.to_device(zburst_gpu) #delete the non-numeric data from each "array"
     zarray2_gpu = cuda.to_device(zarray2)
@@ -173,11 +124,11 @@ if (exists(name + '1.bin')==False):
     distarray_gpu = cuda.to_device (distarray)
     computation[blocks_per_grid, threads_per_block](x_gpu, y_gpu, rnge, increment, distarray_gpu, N, zburst_gpu, y_data_gpu, alpha, E_gpu, sigma_gpu, zarray2_gpu, pi,index)
     zarray2 = zarray2_gpu.copy_to_host()
-    # print ("ZARRAY2: ", zarray2)
-    # for i in range (zarray2.shape [0]):
-    #     for j in range (zarray2.shape [1]):
-    #         for k in range (zarray2.shape [2]):
-                # print (i, j, k, zarray2[i, j, k])
+    print ("ZARRAY2: ", zarray2)
+    for i in range (zarray2.shape [0]):
+        for j in range (zarray2.shape [1]):
+            for k in range (zarray2.shape [2]):
+                print (i, j, k, zarray2[i, j, k])
     zarray2 += 1
 else:
     zarray2 = np.zeros((N, N, frn))
