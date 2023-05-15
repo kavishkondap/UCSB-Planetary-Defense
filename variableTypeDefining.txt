@@ -1,0 +1,14 @@
+xticks
+yticks
+x (COMPLETED, LINE 166)
+y (COMPLETED, LINE 167
+y_data (added type declaration on line 173)
+sigma (COMPLETED, LINE 168)
+E (COMPLETED, LINE 129)
+zburst (COMPLETED, LINE 170)
+times
+hundredpower
+distarray (added type declaration on line 134)
+x_data (added type declaration on line 139)
+zarray2 (DIDN'T HAVE THE int16 TYPE DECLARATION, added on line 141)
+params (COMPLETED, line 156)

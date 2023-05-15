@@ -43,7 +43,7 @@ outname = a[5] #The Name of the output files
 xcenter = int(a[6]) # Enter the x component of the center
 ycenter = int(a[7]) # Enter the y component of the center
 timesleep = int(a[8]) #The time computer sleeps before starting the program. Can use this to run this simultaneously with the cpp file 
-NOI = 1 #int(a[9])
+NOI = 10 #int(a[9])
 title1 = a[10]
 title2 = a[11]
 title3 = a[12]
@@ -69,6 +69,7 @@ sigma = np.delete (sigma, [0, 1, 2])
 E = np.delete (E, [0, 1, 2])
 zburst = np.delete (zburst, [0, 1, 2])
 times = np.delete (times, [0, 1, 2])
+print ('times: ', times.shape)
 print ('N: ', N)
 print ('frn: ', frn)
 times = times[:NOI]
@@ -77,19 +78,21 @@ if mindisp < 0:
     times = times - mindisp + 5
 else:
     times = times - mindisp + 5
-distarray = cp.zeros((2*N,2*N), dtype = np.float32)
+distarray = np.zeros((2*N,2*N), dtype = np.float32)
 xval = N
 yval = N
 cmap1 = mpl.cm.magma
 cmap2 = mpl.cm.Reds
 x_data = cp.arange(0, frn, 1, dtype = np.int32)
 y_data = []
-zarray2=np.zeros((N,N,frn), dtype = np.int16)
+zarray2=np.zeros((N,N,frn), dtype = np.int64)
 E = E * 4.184 * 10**12
 for i in range(len(times)):
     y_data.append(stats.norm.pdf(x_data.get(), times[i]*10, sigma[i]*10))
+    print (stats.norm.pdf(x_data.get(), times[i]*10, sigma[i]*10))
     y_data[i][int(times[i]*10-3*sigma[i]*10):int(times[i]*10+3*sigma[i]*10)] = 0
-
+# print (np.asarray (y_data).shape)
+# exit()
 for j in range(0,2*N):
     for h in range(0,2*N):
         if (j-xval)**2+(h-yval)**2 != 0:
@@ -99,10 +102,12 @@ for j in range(0,2*N):
 index=0
 params = df['Alpha - BB weighted atmospheric transmission - exponential fit model parameters'].to_numpy()
 params = np.delete(params, [0,1,2,4,5])
-params = cp.array (params[:2], dtype = np.float32)
+params = np.array (params[:2], dtype = np.float32)
 a = params[0]
 b = params[1]
 begin_time = time.time()
+
+# print (x.shape, y.shape, rnge, increment, distarray.shape, N, zburst.shape, np.array (y_data).shape, alpha, E.shape, sigma.shape, zarray2.shape, pi, index)
 
 for i in range(NOI):
     y_data[i] = y_data[i]*10000
@@ -115,7 +120,7 @@ if (exists(name + '1.bin')==False):
     sigma_gpu = np.array (np.delete(sigma,[0,1,2]), dtype = np.float32)
     sigma_gpu = cuda.to_device(sigma_gpu) #delete the non-numeric data from each "array"
     E_gpu = np.array (np.delete(E,[0,1,2]), dtype = np.float32) #delete the non-numeric data from each "array"
-    E_gpu = cuda.to_device(E_gpu) 
+    E_gpu = cuda.to_device(E_gpu)
     zburst_gpu = np.array (np.delete(zburst,[0,1,2]), dtype = np.float32)
     zburst_gpu = cuda.to_device(zburst_gpu) #delete the non-numeric data from each "array"
     zarray2_gpu = cuda.to_device(zarray2)
